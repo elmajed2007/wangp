@@ -104,7 +104,7 @@ def scan_py(path):
     rel = os.path.relpath(path, ROOT)
     try: tree = ast.parse(open(path, encoding="utf-8").read())
     except Exception: return
-    big_html = rel.startswith(("shared/gradio", "plugins", "wgp.py", "postprocessing", "shared/deepy/ui", "shared/notifications"))
+    big_html = rel.startswith(("shared/gradio", "plugins", "wgp.py", "postprocessing", "shared/deepy/ui", "shared/deepy/gradio", "shared/notifications", "shared/utils/setting", "models/") ) and not rel.startswith(("models/", )) or rel.endswith(("_handler.py", "ui.py", "gradio_ui.py"))
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
             name = callee(node)
@@ -129,6 +129,13 @@ def scan_py(path):
         if big_html and isinstance(node, ast.JoinedStr):
             lits = "".join(v.value for v in node.values if isinstance(v, ast.Constant))
             if re.search(r"<(div|span|button|p|b|li|h\d|label|summary|td|th|a|strong|small|option)\b", lits): add_tpl(node, rel)
+        # strings returned by UI helper functions (dynamic labels) and dict.get defaults
+        if big_html and isinstance(node, ast.Return) and node.value is not None:
+            take(node.value, rel)
+        if big_html and isinstance(node, ast.Call) and callee(node) == "get" and len(node.args) == 2:
+            take(node.args[1], rel)
+        if big_html and isinstance(node, ast.Assign) and isinstance(node.value, (ast.JoinedStr, ast.IfExp)):
+            take(node.value, rel)
         if isinstance(node, ast.Raise) and isinstance(node.exc, ast.Call) and callee(node.exc) in ("Error", "gr.Error") and node.exc.args:
             take(node.exc.args[0], rel)
 

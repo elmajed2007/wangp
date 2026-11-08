@@ -1,37 +1,30 @@
-/* WanGP Arabic / RTL adjustments */
-html.wangp-lang-ar, html.wangp-lang-ar body, html.wangp-lang-ar .gradio-container,
+/* WanGP Arabic UI styles.
+   Default (wangp-layout-ltr): the page keeps its original layout; Arabic text runs right-to-left
+   inside each element (dir="auto" set by i18n.js + bidi rules below).
+   Optional (wangp-layout-rtl, WANGP_UI_LAYOUT=rtl): whole page mirrored. */
+html.wangp-lang-ar body, html.wangp-lang-ar .gradio-container,
 html.wangp-lang-ar button, html.wangp-lang-ar input, html.wangp-lang-ar select, html.wangp-lang-ar textarea {
-  font-family: "Noto Kufi Arabic", "Noto Sans Arabic", "Cairo", "Tajawal", "Segoe UI", "DejaVu Sans", system-ui, sans-serif !important;
+  font-family: "Noto Sans Arabic", "Noto Kufi Arabic", "Cairo", "Tajawal", "Segoe UI", "DejaVu Sans", system-ui, sans-serif !important;
 }
 
-html[dir="rtl"] body { direction: rtl; text-align: right; }
-html[dir="rtl"] .prose, html[dir="rtl"] .md, html[dir="rtl"] label, html[dir="rtl"] .block-info,
-html[dir="rtl"] [data-testid="block-info"], html[dir="rtl"] .label-wrap { text-align: right; }
-html[dir="rtl"] .prose ul, html[dir="rtl"] .prose ol, html[dir="rtl"] .md ul, html[dir="rtl"] .md ol { padding-right: 1.4em; padding-left: 0; }
-
-/* media, editors, canvases, code and numbers stay left-to-right */
-html[dir="rtl"] video, html[dir="rtl"] audio, html[dir="rtl"] canvas, html[dir="rtl"] img,
-html[dir="rtl"] code, html[dir="rtl"] pre, html[dir="rtl"] kbd,
-html[dir="rtl"] input[type="number"], html[dir="rtl"] input[type="range"],
-html[dir="rtl"] .image-container, html[dir="rtl"] .image-editor, html[dir="rtl"] [data-testid="image"],
-html[dir="rtl"] [data-testid="video"], html[dir="rtl"] [data-testid="waveform"], html[dir="rtl"] .waveform-container,
-html[dir="rtl"] .wangp-image-editor, html[dir="rtl"] .cm-editor, html[dir="rtl"] .monaco-editor,
-html[dir="rtl"] .timeline, html[dir="rtl"] [class*="timeline"], html[dir="rtl"] [class*="waveform"] {
-  direction: ltr;
+/* ---- per-element bidi (default mode) ---- */
+html.wangp-lang-ar .prose p, html.wangp-lang-ar .prose li, html.wangp-lang-ar .prose h1, html.wangp-lang-ar .prose h2,
+html.wangp-lang-ar .prose h3, html.wangp-lang-ar .prose h4, html.wangp-lang-ar .prose blockquote, html.wangp-lang-ar .prose td,
+html.wangp-lang-ar .prose th, html.wangp-lang-ar .md p, html.wangp-lang-ar .md li,
+html.wangp-lang-ar [data-testid="block-info"], html.wangp-lang-ar .info, html.wangp-lang-ar .toast-text,
+html.wangp-lang-ar .toast-title, html.wangp-lang-ar textarea {
+  unicode-bidi: plaintext;
+  text-align: start;
 }
-/* sliders: keep min on the left like the numeric box next to it */
-html[dir="rtl"] .wrap:has(> input[type="range"]), html[dir="rtl"] input[type="range"] { direction: ltr; }
+html.wangp-lang-ar [dir="auto"] { unicode-bidi: isolate; }
+html.wangp-layout-ltr.wangp-lang-ar .prose ul[dir="auto"], html.wangp-layout-ltr.wangp-lang-ar .prose ol[dir="auto"] { padding-inline-start: 1.4em; }
+/* single-line truncated captions: ellipsis on the correct side */
+html.wangp-lang-ar [dir="auto"] { text-overflow: ellipsis; }
 
-/* user text fields follow the text typed in them */
-html[dir="rtl"] textarea, html[dir="rtl"] input[type="text"] { unicode-bidi: plaintext; text-align: start; }
-
-/* dropdown arrows / icons mirrored where they denote direction */
-html[dir="rtl"] .icon-wrap { left: var(--size-2, 8px); right: auto; }
-html[dir="rtl"] .wrap-inner .secondary-wrap { padding-left: 2em; padding-right: 0; }
-
-/* accordions: arrow on the left side */
-html[dir="rtl"] .label-wrap .icon { transform: rotate(180deg); }
-html[dir="rtl"] .label-wrap.open .icon { transform: rotate(90deg); }
-
-/* tooltips and toasts */
-html[dir="rtl"] .toast-body, html[dir="rtl"] .toast-text { text-align: right; direction: rtl; }
+/* ---- full mirrored layout (opt-in) ---- */
+html.wangp-layout-rtl body { direction: rtl; text-align: right; }
+html.wangp-layout-rtl .prose ul, html.wangp-layout-rtl .prose ol { padding-right: 1.4em; padding-left: 0; }
+html.wangp-layout-rtl video, html.wangp-layout-rtl audio, html.wangp-layout-rtl canvas, html.wangp-layout-rtl img,
+html.wangp-layout-rtl code, html.wangp-layout-rtl pre, html.wangp-layout-rtl input[type="number"], html.wangp-layout-rtl input[type="range"],
+html.wangp-layout-rtl [data-testid="image"], html.wangp-layout-rtl [data-testid="video"], html.wangp-layout-rtl [class*="waveform"],
+html.wangp-layout-rtl [class*="timeline"], html.wangp-layout-rtl .cm-editor { direction: ltr; }

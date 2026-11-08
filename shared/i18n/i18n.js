@@ -4,7 +4,11 @@
   "use strict";
   if (window.__wangpI18n) return;
   const LANG = window.WANGP_I18N_LANG || "ar";
-  const RTL = /^(ar|fa|he|ur)/.test(LANG);
+  const RTL_LANG = /^(ar|fa|he|ur)/.test(LANG);
+  // Page layout stays as designed (LTR) unless full mirroring is requested; Arabic text itself
+  // is laid out right-to-left per element (dir="auto" + CSS bidi rules).
+  const RTL = RTL_LANG && window.WANGP_I18N_LAYOUT === "rtl";
+  const ARABIC = /[؀-ۿ]/;
   const api = (window.__wangpI18n = { lang: LANG, ready: false, tr: (s) => s });
 
   // Make Gradio's own built-in strings (upload boxes, toasts, footer...) use its bundled locale.
@@ -16,7 +20,7 @@
   const html = document.documentElement;
   html.setAttribute("lang", LANG);
   if (RTL) html.setAttribute("dir", "rtl");
-  html.classList.add("wangp-i18n", "wangp-lang-" + LANG);
+  html.classList.add("wangp-i18n", "wangp-lang-" + LANG, RTL ? "wangp-layout-rtl" : "wangp-layout-ltr");
 
   const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "TEXTAREA", "CODE", "PRE", "NOSCRIPT", "SVG", "MATH", "KBD", "SAMP", "CANVAS"]);
   const SKIP_SEL = "[contenteditable=''],[contenteditable='true'],.no-translate,[data-no-translate],.cm-editor,.monaco-editor,[data-testid='textbox'] textarea";
@@ -74,13 +78,39 @@
     return false;
   }
 
+  const INLINE = new Set(["SPAN", "B", "STRONG", "EM", "I", "A", "SMALL", "U", "MARK"]);
+  // Containers that split a sentence into one <span> per word (e.g. progress model name):
+  // translating word by word produces nonsense, the server already translated the whole text.
+  function wordSplit(p) {
+    const g = p.parentElement;
+    if (!g || p.tagName !== "SPAN" || g.children.length < 2) return false;
+    for (const c of g.children) if (c.tagName !== "SPAN" || /\s/.test((c.textContent || "").trim())) return false;
+    return true;
+  }
+
+  function markBidi(p) {
+    if (!RTL_LANG || RTL) return;
+    if (!p.hasAttribute("dir")) p.setAttribute("dir", "auto");
+    // inline wrappers: give the nearest block-ish ancestor the direction too, so word order and alignment follow Arabic
+    let e = p;
+    for (let i = 0; i < 2 && e && INLINE.has(e.tagName); i++) {
+      e = e.parentElement;
+      if (e && !e.hasAttribute("dir") && !e.matches("body,html,.gradio-container,.row,.column,form")) {
+        if (ARABIC.test(e.textContent || "") && e.textContent.length < 600) e.setAttribute("dir", "auto");
+      }
+    }
+  }
+
   function doText(node) {
     const v = node.nodeValue;
-    if (!v || v.length > 2000 || !/[A-Za-z]/.test(v)) return;
     const p = node.parentElement;
-    if (!p || skipped(p)) return;
+    if (!v || !p || v.length > 2000) return;
+    if (!/[A-Za-z]/.test(v)) { if (ARABIC.test(v) && !skipped(p)) markBidi(p); return; }
+    if (skipped(p)) return;
+    if (!/\s/.test(v.trim()) && wordSplit(p)) return;
     const t = tr(v);
     if (t !== v) node.nodeValue = t;
+    if (ARABIC.test(node.nodeValue)) markBidi(p);
   }
 
   function doAttrs(el) {
@@ -92,8 +122,7 @@
     if (el.tagName === "INPUT" && (el.type === "button" || el.type === "submit") && el.value) {
       const t = tr(el.value); if (t !== el.value) el.value = t;
     }
-    if (RTL && el.tagName === "TEXTAREA" && !el.hasAttribute("dir")) el.setAttribute("dir", "auto");
-    if (RTL && el.tagName === "INPUT" && el.type === "text" && !el.hasAttribute("dir")) el.setAttribute("dir", "auto");
+    if (RTL_LANG && el.tagName === "TEXTAREA" && !el.hasAttribute("dir")) el.setAttribute("dir", "auto");
   }
 
   function walk(root) {

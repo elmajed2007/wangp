@@ -21,6 +21,9 @@ from pathlib import Path
 HERE = Path(__file__).parent
 LANG = (os.environ.get("WANGP_UI_LANG") or "ar").strip().lower()
 ENABLED = LANG not in ("", "en", "off", "0", "none")
+# "ltr" keeps WanGP's original layout with Arabic text flowing right-to-left inside each element
+# (robust default); "rtl" mirrors the whole page.
+LAYOUT = (os.environ.get("WANGP_UI_LAYOUT") or "ltr").strip().lower()
 _DICT_PATH = HERE / f"{LANG}.json"
 _STRINGS: dict[str, str] = {}
 _TEMPLATES: list[tuple[re.Pattern, str, str]] = []
@@ -87,6 +90,7 @@ def tr(text):
 
 
 _TAG = re.compile(r"(<[^>]+>)")
+_WORD_RUN = re.compile(r"((?:<span>[^<\s]+</span>\s*){2,})")
 _ATTR = re.compile(r'''\b(title|placeholder|aria-label|alt|data-tooltip)=("[^"]*"|'[^']*')''')
 _MD_SPLIT = re.compile(r"(\*\*|__|`[^`]*`|\[[^\]]*\]\([^)]*\))")
 _MD_LINE = re.compile(r"^(\s*(?:#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s*)?)(.*)$")
@@ -126,6 +130,10 @@ def tr_rich(text):
     if whole != text:
         return whole
     if "<" in text and _TAG.search(text):
+        # one-<span>-per-word runs (progress model name): never translate word by word
+        protected = _WORD_RUN.split(text)
+        if len(protected) > 1:
+            return "".join(p if _WORD_RUN.fullmatch(p) else tr_rich(p) for p in protected)
         out = []
         for chunk in _TAG.split(text):
             if chunk.startswith("<") and chunk.endswith(">"):
@@ -259,7 +267,7 @@ def _asset(name: str) -> tuple[bytes, str] | None:
 def _snippet() -> bytes:
     v = str(int(max((HERE / f).stat().st_mtime for f in ("i18n.js", "rtl.css", f"{LANG}.json"))))
     return (f'<link rel="stylesheet" href="{_ASSET_ROUTE}rtl.css?v={v}">'
-            f'<script>window.WANGP_I18N_LANG={json.dumps(LANG)};window.WANGP_I18N_URL="{_ASSET_ROUTE}dict.json?v={v}";</script>'
+            f'<script>window.WANGP_I18N_LANG={json.dumps(LANG)};window.WANGP_I18N_LAYOUT={json.dumps(LAYOUT)};window.WANGP_I18N_URL="{_ASSET_ROUTE}dict.json?v={v}";</script>'
             f'<script src="{_ASSET_ROUTE}i18n.js?v={v}"></script>').encode()
 
 
@@ -339,6 +347,29 @@ def _patch_app():
     routes.App.create_app = staticmethod(create_app)
 
 
+def _patch_progress():
+    """The progress header renders the model name one <span> per word: translate it whole first."""
+    try:
+        from shared.gradio import progress
+    except Exception:
+        return
+    cls = getattr(progress, "WangpProgress", None)
+    if cls is None or getattr(cls.render, "_wangp_i18n", False):
+        return
+    original = cls.render
+
+    @wraps(original)
+    def render(self, *args, **kwargs):
+        if isinstance(kwargs.get("model_name"), str):
+            kwargs["model_name"] = tr(kwargs["model_name"])
+        if isinstance(kwargs.get("bar_text"), str):
+            kwargs["bar_text"] = tr(kwargs["bar_text"])
+        return original(self, *args, **kwargs)
+
+    render._wangp_i18n = True
+    cls.render = render
+
+
 _installed = False
 
 
@@ -351,4 +382,5 @@ def install():
     _patch_config()
     _patch_messages()
     _patch_app()
+    _patch_progress()
     print(f"[i18n] UI language: {LANG} ({len(_STRINGS)} strings, {len(_TEMPLATES)} templates)")
