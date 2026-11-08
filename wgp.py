@@ -69,6 +69,7 @@ from pathlib import Path
 from shared.tinyvae.media import VideoPreview
 from datetime import datetime
 import gradio as gr
+from shared import i18n as wangp_i18n; wangp_i18n.install()  # Arabic UI (WANGP_UI_LANG=en to disable)
 from shared.gradio import downloads as gradio_downloads
 from shared.gradio.progress import WangpProgress
 from shared.gradio import gradio_event_context_patch, gradio_model_switch_patch, gradio_queue_focus_patch, gradio_startup_patch, video_preview
