@@ -1,5 +1,7 @@
 # الواجهة العربية (Arabic UI)
 
+> Applies to: The Arabic user interface layer (shared/i18n): enabling or disabling it, page layout options, and updating the translation dictionary.
+
 تعمل واجهة WanGP بالعربية افتراضيًا مع اتجاه من اليمين لليسار (RTL)، وتشمل الواجهة الرئيسية وتطبيقات Deepy وShowrunner وMedia Flow.
 
 ## التشغيل
