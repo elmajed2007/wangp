@@ -2,7 +2,7 @@
 
 > Applies to: The Arabic user interface layer (shared/i18n): enabling or disabling it, page layout options, and updating the translation dictionary.
 
-تعمل واجهة WanGP بالعربية افتراضيًا مع اتجاه من اليمين لليسار (RTL)، وتشمل الواجهة الرئيسية وتطبيقات Deepy وShowrunner وMedia Flow.
+تعمل واجهة WanGP بالعربية افتراضيًا مع الحفاظ على تخطيط الصفحة الأصلي ونص عربي من اليمين لليسار داخل كل عنصر (للعكس الكامل: `WANGP_UI_LAYOUT=rtl`)، وتشمل الواجهة الرئيسية وتطبيقات Deepy وShowrunner وMedia Flow.
 
 ## التشغيل
 
